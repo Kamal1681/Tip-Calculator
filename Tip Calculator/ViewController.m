@@ -23,9 +23,15 @@
     // Do any additional setup after loading the view, typically from a nib.
    [[NSNotificationCenter defaultCenter]
      addObserver:self
-    selector:@selector(keyboard:)
+    selector:@selector(keyboardWillShow:)
      name:UIKeyboardWillShowNotification
     object:nil];
+    
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self
+     selector:@selector(keyboardWillHide:)
+     name:UIKeyboardWillHideNotification
+     object:nil];
     
     [[NSNotificationCenter defaultCenter]
      addObserver:self
@@ -36,13 +42,34 @@
     
     [self.tipPercentageSlider setContinuous:YES];
     [self.tipPercentageSlider addTarget:self action:@selector(sliderUpdate:) forControlEvents:UIControlEventValueChanged];
+    
+    self.billAmountTextField.delegate = self;
+    self.tipPercentageTextField.delegate = self;
+    
+   
 }
 
-- (void) keyboard: (NSNotification *)notification {
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    [textField resignFirstResponder];
+    return YES;
+}
+
+- (void) keyboardWillShow: (NSNotification *)notification {
     NSDictionary * keyboardInfo = [notification userInfo];
     CGRect keyboardSize = [[keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
-    [self.view setFrame: CGRectMake(self.view.frame.origin.x, self.view.frame.origin.y, self.view.frame.size.width, (self.view.frame.size.height) - keyboardSize.size.height)];
-     
+    
+    if (self.view.bounds.origin.y == 0) {
+        self.view.bounds = CGRectOffset(self.view.bounds, 0, keyboardSize.size.height);
+    }
+    
+}
+- (void) keyboardWillHide: (NSNotification *)notification {
+    NSDictionary * keyboardInfo = [notification userInfo];
+    CGRect keyboardSize = [[keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    if (self.view.bounds.origin.y !=0) {
+        self.view.bounds = CGRectOffset(self.view.bounds, 0, -keyboardSize.size.height);
+    }
 }
 - (void) textFieldUpdated: (NSNotification *)notification {
     [self calculateTip];
@@ -56,7 +83,6 @@
     [self calculateTip];
 }
 - (IBAction)adjustTipPercentage:(id)sender {
-    
     
     self.tipPercentageTextField.text = @(self.tipPercentageSlider.value).stringValue;
     NSLog(@"%f", self.tipPercentageSlider.value);
